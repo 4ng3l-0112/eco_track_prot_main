@@ -4,7 +4,7 @@
             "outputFile": "com.mycompany.ecotrackprot.app-mergeDebugResources-40:/values-v24/values-v24.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\LENOVO\\.gradle\\caches\\8.9\\transforms\\9d1e7d898c356419b139cc7e10c9afaf\\transformed\\media-1.0.0\\res\\values-v24\\values-v24.xml",
+                    "source": "C:\\Users\\ANNEXIE\\.gradle\\caches\\8.9\\transforms\\9d1e7d898c356419b139cc7e10c9afaf\\transformed\\media-1.0.0\\res\\values-v24\\values-v24.xml",
                     "from": {
                         "startLines": "2,3,4,5",
                         "startColumns": "4,4,4,4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\LENOVO\\.gradle\\caches\\8.9\\transforms\\29f74d3b5f742af4479cde02a6451d07\\transformed\\appcompat-1.2.0\\res\\values-v24\\values-v24.xml",
+                    "source": "C:\\Users\\ANNEXIE\\.gradle\\caches\\8.9\\transforms\\29f74d3b5f742af4479cde02a6451d07\\transformed\\appcompat-1.2.0\\res\\values-v24\\values-v24.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",

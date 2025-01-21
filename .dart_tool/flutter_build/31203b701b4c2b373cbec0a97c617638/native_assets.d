@@ -1,0 +1,1 @@
+ C:\\Users\\ANNEXIE\\eco_track_prot_main\\.dart_tool\\flutter_build\\31203b701b4c2b373cbec0a97c617638\\native_assets.yaml: 

@@ -13,6 +13,7 @@ import 'firebase_user_provider.dart';
 import 'google_auth.dart';
 import 'jwt_token_auth.dart';
 import 'github_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 export '../base_auth_user_provider.dart';
 
@@ -53,29 +54,47 @@ class FirebaseAuthManager extends AuthManager
   // Set when using phone sign in in web mode (ignored otherwise).
   ConfirmationResult? _webPhoneAuthConfirmationResult;
   FirebasePhoneAuthManager phoneAuthManager = FirebasePhoneAuthManager();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   @override
-  Future signOut() {
-    return FirebaseAuth.instance.signOut();
+  Future signOut({required BuildContext context}) async {
+    try {
+      await _googleSignIn.signOut();
+      await _firebaseAuth.signOut();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error signing out: $e'),
+        ),
+      );
+    }
   }
 
   @override
   Future deleteUser(BuildContext context) async {
     try {
-      if (!loggedIn) {
-        print('Error: delete user attempted with no logged in user!');
-        return;
-      }
-      await currentUser?.delete();
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'requires-recent-login') {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (_firebaseAuth.currentUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text(
-                  'Too long since most recent sign in. Sign in again before deleting your account.')),
+            content: Text('No user currently signed in.'),
+          ),
         );
+        return;
       }
+      await _firebaseAuth.currentUser!.delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User account successfully deleted.'),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.message}'),
+        ),
+      );
     }
   }
 
@@ -125,22 +144,26 @@ class FirebaseAuthManager extends AuthManager
   }
 
   @override
-  Future resetPassword({
+  Future<void> resetPassword({
     required String email,
     required BuildContext context,
   }) async {
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.message!}')),
+        const SnackBar(
+          content: Text('Password reset email sent'),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.message!}'),
+        ),
       );
       return null;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password reset email sent')),
-    );
   }
 
   @override
@@ -150,7 +173,6 @@ class FirebaseAuthManager extends AuthManager
     String password,
   ) =>
       _signInOrCreateAccount(
-        context,
         () => emailSignInFunc(email, password),
         'EMAIL',
       );
@@ -162,7 +184,6 @@ class FirebaseAuthManager extends AuthManager
     String password,
   ) =>
       _signInOrCreateAccount(
-        context,
         () => emailCreateAccountFunc(email, password),
         'EMAIL',
       );
@@ -171,26 +192,41 @@ class FirebaseAuthManager extends AuthManager
   Future<BaseAuthUser?> signInAnonymously(
     BuildContext context,
   ) =>
-      _signInOrCreateAccount(context, anonymousSignInFunc, 'ANONYMOUS');
+      _signInOrCreateAccount(
+        anonymousSignInFunc,
+        'ANONYMOUS',
+      );
 
   @override
   Future<BaseAuthUser?> signInWithApple(BuildContext context) =>
-      _signInOrCreateAccount(context, appleSignIn, 'APPLE');
+      _signInOrCreateAccount(
+        () => appleSignIn(context),
+        'APPLE',
+      );
 
   @override
   Future<BaseAuthUser?> signInWithGoogle(BuildContext context) =>
-      _signInOrCreateAccount(context, googleSignInFunc, 'GOOGLE');
+      _signInOrCreateAccount(
+        () => _handleGoogleSignIn(context),
+        'GOOGLE',
+      );
 
   @override
   Future<BaseAuthUser?> signInWithGithub(BuildContext context) =>
-      _signInOrCreateAccount(context, githubSignInFunc, 'GITHUB');
+      _signInOrCreateAccount(
+        githubSignInFunc,
+        'GITHUB',
+      );
 
   @override
   Future<BaseAuthUser?> signInWithJwtToken(
     BuildContext context,
     String jwtToken,
   ) =>
-      _signInOrCreateAccount(context, () => jwtTokenSignIn(jwtToken), 'JWT');
+      _signInOrCreateAccount(
+        () => jwtTokenSignIn(jwtToken),
+        'JWT',
+      );
 
   void handlePhoneAuthStateChanges(BuildContext context) {
     phoneAuthManager.addListener(() {
@@ -277,7 +313,6 @@ class FirebaseAuthManager extends AuthManager
   }) {
     if (kIsWeb) {
       return _signInOrCreateAccount(
-        context,
         () => phoneAuthManager.webPhoneAuthConfirmationResult!.confirm(smsCode),
         'PHONE',
       );
@@ -287,22 +322,49 @@ class FirebaseAuthManager extends AuthManager
         smsCode: smsCode,
       );
       return _signInOrCreateAccount(
-        context,
         () => FirebaseAuth.instance.signInWithCredential(authCredential),
         'PHONE',
       );
     }
   }
 
+  Future<UserCredential?> _handleGoogleSignIn(BuildContext context) async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        return null;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return await _firebaseAuth.signInWithCredential(credential);
+    } catch (e) {
+      print('Google Sign In Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to sign in with Google. Please try again.'),
+        ),
+      );
+      return null;
+    }
+  }
+
   /// Tries to sign in or create an account using Firebase Auth.
   /// Returns the User object if sign in was successful.
   Future<BaseAuthUser?> _signInOrCreateAccount(
-    BuildContext context,
     Future<UserCredential?> Function() signInFunc,
-    String authProvider,
+    String provider,
   ) async {
     try {
+      print('Attempting sign in with $provider...'); 
       final userCredential = await signInFunc();
+      print('Sign in result: ${userCredential?.user?.uid}');
       if (userCredential?.user != null) {
         await maybeCreateUser(userCredential!.user!);
       }
@@ -310,6 +372,7 @@ class FirebaseAuthManager extends AuthManager
           ? null
           : EcoTrackProtFirebaseUser.fromUserCredential(userCredential);
     } on FirebaseAuthException catch (e) {
+      print('Firebase Auth Error: ${e.code} - ${e.message}');
       final errorMsg = switch (e.code) {
         'email-already-in-use' =>
           'Error: The email is already in use by a different account',
@@ -323,5 +386,11 @@ class FirebaseAuthManager extends AuthManager
       );
       return null;
     }
+  }
+
+  Future<UserCredential?> appleSignIn(BuildContext context) async {
+    return null;
+  
+    // Your apple sign in logic
   }
 }

@@ -5,6 +5,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
 import 'resident_login_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 export 'resident_login_model.dart';
 
 class ResidentLoginWidget extends StatefulWidget {
@@ -422,20 +423,28 @@ class _ResidentLoginWidgetState extends State<ResidentLoginWidget> {
                                       onPressed: () async {
                                         GoRouter.of(context).prepareAuthEvent();
 
-                                        final user =
-                                            await authManager.signInWithEmail(
-                                          context,
-                                          _model.emailTextController.text,
-                                          _model.passwordTextController.text,
-                                        );
-                                        if (user == null) {
-                                          return;
-                                        }
+                                        try {
+                                          await FirebaseAuth.instance.signInWithEmailAndPassword(
+                                            email: _model.emailTextController.text,
+                                            password: _model.passwordTextController.text,
+                                          );
 
-                                        context.pushNamedAuth(
-                                            'residentDashboard',
-                                            context.mounted);
-                                                                            },
+                                          context.pushNamedAuth(
+                                              'residentDashboard',
+                                              context.mounted);
+                                        } on FirebaseAuthException catch (e) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                e.code == 'user-not-found' ? 'No user found with this email.' :
+                                                e.code == 'wrong-password' ? 'Wrong password provided.' :
+                                                e.code == 'invalid-email' ? 'Invalid email format.' :
+                                                'Authentication failed: ${e.message}'
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
                                       text: 'Sign In',
                                       options: FFButtonOptions(
                                         width:

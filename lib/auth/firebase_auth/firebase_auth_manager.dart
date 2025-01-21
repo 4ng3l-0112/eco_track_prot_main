@@ -14,6 +14,7 @@ import 'google_auth.dart';
 import 'jwt_token_auth.dart';
 import 'github_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../base_auth_user_provider.dart';
 
 export '../base_auth_user_provider.dart';
 
@@ -37,6 +38,70 @@ class FirebasePhoneAuthManager extends ChangeNotifier {
   void update(VoidCallback callback) {
     callback();
     notifyListeners();
+  }
+}
+
+class FirebaseAuthUser extends BaseAuthUser {
+  FirebaseAuthUser(this.user) : super() {
+    uid = user.uid;
+  }
+
+  final User user;
+
+  @override
+  late String uid;
+
+  @override
+  bool get emailVerified => user.emailVerified;
+
+  @override
+  String? get email => user.email;
+
+  @override
+  String? get displayName => user.displayName;
+
+  @override
+  String? get photoUrl => user.photoURL;
+
+  @override
+  bool get isAnonymous => user.isAnonymous;
+
+  @override
+  bool get loggedIn => user != null;
+
+  @override
+  Map<String, dynamic> get authUserInfo => {
+    'uid': user.uid,
+    'email': user.email,
+    'displayName': user.displayName,
+    'photoUrl': user.photoURL,
+    'emailVerified': user.emailVerified,
+  };
+
+  @override
+  Future? delete() => user.delete();
+
+  @override
+  Future? sendEmailVerification() => user.sendEmailVerification();
+
+  @override
+  Future<bool> updateEmail(String email) async {
+    try {
+      await user.updateEmail(email);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> updatePassword(String password) async {
+    try {
+      await user.updatePassword(password);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
@@ -171,22 +236,50 @@ class FirebaseAuthManager extends AuthManager
     BuildContext context,
     String email,
     String password,
-  ) =>
-      _signInOrCreateAccount(
-        () => emailSignInFunc(email, password),
-        'EMAIL',
+  ) async {
+    try {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+      return userCredential.user != null
+          ? FirebaseAuthUser(userCredential.user!)
+          : null;
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.message!}'),
+        ),
+      );
+      return null;
+    }
+  }
 
   @override
   Future<BaseAuthUser?> createAccountWithEmail(
     BuildContext context,
     String email,
     String password,
-  ) =>
-      _signInOrCreateAccount(
-        () => emailCreateAccountFunc(email, password),
-        'EMAIL',
+  ) async {
+    try {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+      return userCredential.user != null
+          ? FirebaseAuthUser(userCredential.user!)
+          : null;
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.message!}'),
+        ),
+      );
+      return null;
+    }
+  }
 
   @override
   Future<BaseAuthUser?> signInAnonymously(

@@ -11,6 +11,9 @@ class ImagePageForLogwasteModel
   TextEditingController? textController;
   String? Function(BuildContext, String?)? textControllerValidator;
 
+  // Add state for loading
+  bool isSubmitting = false;
+
   @override
   void initState(BuildContext context) {}
 

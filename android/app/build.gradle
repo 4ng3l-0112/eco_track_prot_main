@@ -32,6 +32,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
+    namespace "com.mycompany.ecotrackprot"
     compileSdkVersion 34
     
 
@@ -51,6 +52,16 @@ android {
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 
    signingConfigs {

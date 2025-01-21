@@ -6,6 +6,8 @@ import '/flutter_flow/permissions_util.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'resident_dashboard_model.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 export 'resident_dashboard_model.dart';
 
 class ResidentDashboardWidget extends StatefulWidget {
@@ -210,31 +212,46 @@ class _ResidentDashboardWidgetState extends State<ResidentDashboardWidget> {
                                   onPressed: () async {
                                     if (await getPermissionStatus(
                                         cameraPermission)) {
-                                      await queryPhotosRecordOnce(
-                                        singleRecord: true,
-                                      ).then((s) => s.firstOrNull);
+                                      final imagePicker = ImagePicker();
+                                      final XFile? image = await imagePicker.pickImage(
+                                        source: ImageSource.camera,
+                                        maxWidth: 1024,
+                                        maxHeight: 1024,
+                                        imageQuality: 85,
+                                      );
+
+                                      if (image != null) {
+                                        // Upload image to Firebase Storage
+                                        final storageRef = FirebaseStorage.instance
+                                            .ref()
+                                            .child('waste_images/${DateTime.now().millisecondsSinceEpoch}.jpg');
+                                        
+                                        final imageBytes = await image.readAsBytes();
+                                        await storageRef.putData(imageBytes);
+                                        final downloadUrl = await storageRef.getDownloadURL();
+
+                                        // Navigate to image review page
+                                        context.pushNamed(
+                                          'ImagePageForLogwaste',
+                                          queryParameters: {
+                                            'imageUrl': serializeParam(
+                                              downloadUrl,
+                                              ParamType.String,
+                                            ),
+                                          },
+                                          extra: <String, dynamic>{
+                                            kTransitionInfoKey: const TransitionInfo(
+                                              hasTransition: true,
+                                              transitionType: PageTransitionType.fade,
+                                              duration: Duration(milliseconds: 0),
+                                            ),
+                                          },
+                                        );
+                                      }
                                     } else {
                                       context.pop();
                                       return;
                                     }
-
-                                    context.pushNamed(
-                                      'WasteRecords',
-                                      queryParameters: {
-                                        'image': serializeParam(
-                                          '40',
-                                          ParamType.String,
-                                        ),
-                                      }.withoutNulls,
-                                      extra: <String, dynamic>{
-                                        kTransitionInfoKey: const TransitionInfo(
-                                          hasTransition: true,
-                                          transitionType:
-                                              PageTransitionType.fade,
-                                          duration: Duration(milliseconds: 0),
-                                        ),
-                                      },
-                                    );
                                   },
                                   text: 'Log Waste',
                                   icon: const Icon(

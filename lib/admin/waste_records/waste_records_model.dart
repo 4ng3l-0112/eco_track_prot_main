@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 class WasteRecordsModel extends FlutterFlowModel<WasteRecordsWidget> {
   ///  State fields for stateful widgets in this page.
 
+  // State fields for stateful widgets in this page.
+  bool isProcessing = false;
+
   // Stores action output result for [Backend Call - Read Document] action in Container widget.
   UsersRecord? residentLog;
   // Stores action output result for [Backend Call - Read Document] action in Column widget.

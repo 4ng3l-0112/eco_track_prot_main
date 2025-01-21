@@ -157,7 +157,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: 'ImagePageForLogwaste',
           path: '/imagePageForLogwaste',
-          builder: (context, params) => const ImagePageForLogwasteWidget(),
+          builder: (context, params) => ImagePageForLogwasteWidget(
+            imageUrl: params.getParam('imageUrl', ParamType.String),
+          ),
         ),
         FFRoute(
           name: 'AdminSignup',

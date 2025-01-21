@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.mycompany.ecotrackprot.app-mergeDebugResources-40:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\LENOVO\\.gradle\\caches\\8.9\\transforms\\29f74d3b5f742af4479cde02a6451d07\\transformed\\appcompat-1.2.0\\res\\values-port\\values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

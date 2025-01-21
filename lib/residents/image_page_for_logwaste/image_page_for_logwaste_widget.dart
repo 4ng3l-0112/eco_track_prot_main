@@ -8,7 +8,12 @@ import 'image_page_for_logwaste_model.dart';
 export 'image_page_for_logwaste_model.dart';
 
 class ImagePageForLogwasteWidget extends StatefulWidget {
-  const ImagePageForLogwasteWidget({super.key});
+  const ImagePageForLogwasteWidget({
+    super.key,
+    required this.imageUrl,
+  });
+
+  final String imageUrl;
 
   @override
   State<ImagePageForLogwasteWidget> createState() =>
@@ -134,7 +139,7 @@ class _ImagePageForLogwasteWidgetState
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(12.0),
                                   child: Image.network(
-                                    'https://images.unsplash.com/photo-1618411566948-e65e68f8f67e?w=500&h=500',
+                                    widget.imageUrl,
                                     width:
                                         MediaQuery.sizeOf(context).width * 1.0,
                                     height:
@@ -240,10 +245,35 @@ class _ImagePageForLogwasteWidgetState
                                   ),
                                   FFButtonWidget(
                                     onPressed: () async {
-                                      await currentUserReference!.update(
-                                          createAdminaccountsRecordData());
+                                      if (_model.isSubmitting) return;
+                                      
+                                      setState(() => _model.isSubmitting = true);
+                                      
+                                      try {
+                                        // Create waste submission record
+                                        final wasteSubmissionData = createPhotosRecordData(
+                                          image: widget.imageUrl,
+                                          imageStatus: 'pending',
+                                          dateCreated: DateTime.now(),
+                                          owner: currentUserReference,
+                                        );
+                                        
+                                        await PhotosRecord.collection.doc().set(wasteSubmissionData);
+
+                                        // Navigate back to dashboard
+                                        context.pushNamed('ResidentDashboard');
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error submitting waste record: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      } finally {
+                                        setState(() => _model.isSubmitting = false);
+                                      }
                                     },
-                                    text: 'Submit',
+                                    text: _model.isSubmitting ? 'Submitting...' : 'Submit',
                                     options: FFButtonOptions(
                                       width: 150.0,
                                       height: 50.0,

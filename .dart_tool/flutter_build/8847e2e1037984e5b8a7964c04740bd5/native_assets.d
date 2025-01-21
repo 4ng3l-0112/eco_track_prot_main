@@ -1,0 +1,1 @@
+ C:\\Users\\LENOVO\\Downloads\\Test_1\\eco_track_prot\\.dart_tool\\flutter_build\\8847e2e1037984e5b8a7964c04740bd5\\native_assets.yaml: 
